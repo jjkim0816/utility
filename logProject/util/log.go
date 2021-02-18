@@ -84,7 +84,7 @@ func (w *logWriter) logTrucate(keepDays int) {
 		// delete log files
 		if duration.Hours() > 24 {
 			targetDay := now.AddDate(0, 0, -1*keepDays)
-			for day := 1; day <= keepDays; day++ {
+			for day := 1; day < keepDays; day++ {
 				fullPath := fmt.Sprint(w.basePath, ",", fmt.Sprintf("%04d%02d", targetDay.Year(), int(targetDay.Month())), "/", fmt.Sprintf("%02d.log", targetDay.Day()))
 				_, err := os.Stat(fullPath)
 				if err == nil {
