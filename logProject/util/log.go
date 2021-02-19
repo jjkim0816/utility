@@ -6,8 +6,16 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
+)
+
+const (
+	// FilePermissionAll is the File Permission for the read/write file
+	FilePermissionAll = 0666
+	// GeneralFolderPermission is the Folder Permission for the general folder
+	GeneralFolderPermission = 0766
 )
 
 const (
@@ -39,13 +47,13 @@ func checkLogFile(path string) (*os.File, error) {
 
 	if _, err := os.Stat(fullLogFile); err != nil {
 		// fmt.Println("create log")
-		file, err = os.OpenFile(fullLogFile, os.O_CREATE|os.O_RDWR, 0666)
+		file, err = os.OpenFile(fullLogFile, os.O_CREATE|os.O_RDWR, FilePermissionAll)
 		if err != nil {
 			return file, err
 		}
 	} else {
 		// fmt.Println("append log")
-		file, err = os.OpenFile(fullLogFile, os.O_APPEND|os.O_RDWR, 0666)
+		file, err = os.OpenFile(fullLogFile, os.O_APPEND|os.O_RDWR, FilePermissionAll)
 		if err != nil {
 			return file, err
 		}
@@ -56,10 +64,10 @@ func checkLogFile(path string) (*os.File, error) {
 
 // 초기 기동 시 로그 디렉토리 생성
 func (w *logWriter) MakeLogDirectory() {
-	os.Mkdir(w.basePath, 0766) // 이미 존재하는 디렉토리는 skip
+	os.Mkdir(w.basePath, GeneralFolderPermission) // 이미 존재하는 디렉토리는 skip
 	now := time.Now()
 	w.fullPath = fmt.Sprint(w.basePath, "/", fmt.Sprintf("%04d%02d", now.Year(), int(now.Month())))
-	os.Mkdir(w.fullPath, 0766) // 이미 존재하는 디렉토리는 skip
+	os.Mkdir(w.fullPath, GeneralFolderPermission) // 이미 존재하는 디렉토리는 skip
 }
 
 func (w *logWriter) Write(p []byte) (int, error) {
@@ -73,6 +81,21 @@ func (w *logWriter) Write(p []byte) (int, error) {
 	defer file.Close()
 
 	return file.Write(p)
+}
+
+func isEmptyDirectory(filePath string) (bool, error) {
+	infos, err := ioutil.ReadDir(filePath)
+	if err != nil {
+		return false, err
+	}
+
+	for _, info := range infos {
+		if info.Name() != "." || info.Name() != ".." {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 // keepDays 이전 로그 삭제
@@ -91,26 +114,21 @@ func (w *logWriter) logTrucate(keepDays int) {
 					os.Remove(fullPath)
 				}
 
-				targetDay = targetDay.AddDate(0, 0, 1)
+				targetDay = targetDay.AddDate(0, 0, -1)
 			}
 		}
 
 		// remove empry directory
-		dir, err := ioutil.ReadDir(w.fullPath)
+		dirs, err := ioutil.ReadDir(w.basePath)
 		if err != nil {
 			Warn.Printf("Can't check the log folder '%s' due to cleansing the empty previous log folders. %s", w.basePath, err)
 		} else {
-			removeYn := false
-			for _, info := range dir {
-				name := info.Name()
-				if name != "." && name != ".." {
-					removeYn = true
-					break
+			for _, dir := range dirs {
+				removePath := filepath.Join(w.basePath, dir.Name())
+				empty, err := isEmptyDirectory(removePath)
+				if empty && err == nil {
+					os.Remove(removePath)
 				}
-			}
-
-			if removeYn {
-				os.Remove(w.fullPath)
 			}
 		}
 	}
