@@ -55,8 +55,8 @@ func compressXZ() {
 	fmt.Println("compressXZ end : ", time.Now())
 }
 
-func depressXZ() {
-	fmt.Println("depressXZ start : ", time.Now())
+func decompressXZ() {
+	fmt.Println("decompressXZ start : ", time.Now())
 	inputPath := "./18.log.xz"
 	outputPath := "./test_18.log"
 
@@ -79,7 +79,7 @@ func depressXZ() {
 	if _, err := io.Copy(decompress, r); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("depressXZ start : ", time.Now())
+	fmt.Println("decompressXZ start : ", time.Now())
 }
 
 func compressTAR() {
@@ -127,7 +127,7 @@ func main() {
 	case "-c":
 		compressXZ()
 	case "-d":
-		depressXZ()
+		decompressXZ()
 	default:
 		compressTAR()
 	}
