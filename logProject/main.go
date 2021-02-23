@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"sampleProject/logProject/util"
+	"strconv"
 	"time"
 )
 
@@ -37,11 +38,37 @@ func testLogWrite() {
 	}
 }
 
+// 말모이 *.yaml 에 들어갈 설정 데이터
+type logConfig struct {
+	logPath    string
+	keepDays   int
+	logLevel   int
+	logZipPath string
+	logZipTime int // 0 ~ 23 hour 기준
+}
+
 func main() {
 	//util.EnableInfoLog|util.EnableTraceLog|util.EnableWarnLog
-	basePath := "../logs/" + os.Args[0][2:]
-	keepDays := 1
-	fmt.Println(basePath)
-	util.InitLog(basePath, util.EnableTraceLog|util.EnableWarnLog, keepDays)
+	config := logConfig{
+		logPath:    "../logs/" + os.Args[0][2:],
+		keepDays:   1,
+		logLevel:   5,
+		logZipPath: "../zips/" + os.Args[0][2:],
+		logZipTime: 11,
+	}
+
+	fmt.Printf("%+v\n", config)
+
+	switch os.Args[1] {
+	case "-z":
+		logZipTime, _ := strconv.Atoi(os.Args[2])
+		util.LogCompress(config.logPath, config.logZipPath, logZipTime)
+		return
+	case "-uz":
+		fmt.Println("to-do decompress")
+		return
+	}
+
+	util.InitLog(config.logPath, config.logLevel, config.keepDays, config.logZipPath, config.logZipTime)
 	testLogWrite()
 }
