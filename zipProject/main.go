@@ -31,9 +31,11 @@ func compressXZ() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer w.Close()
 
 	original, err := os.Open(inputPath)
 	if err != nil {
+		os.Remove(outputPath)
 		log.Fatal(err)
 	}
 	defer original.Close()
